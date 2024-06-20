@@ -45,9 +45,11 @@ int main() {
                                 cudaStream_t)>>> const gemm_kernel_launch_functions {
                                     {"Custom gemm kernel V00", launch_gemm_kernel_v00<float>},
                                     {"Custom gemm kernel V01", launch_gemm_kernel_v01<float>},
+                                    {"Custom gemm kernel V02", launch_gemm_kernel_v02<float>}
                                 };
 
     for (auto gemm_kernel_launch_function : gemm_kernel_launch_functions) {
+        std::cout << "-------------------------------------------------" << std::endl;
         std::cout << gemm_kernel_launch_function.first << std::endl;
         std::pair<float, float> gemm_kernel_profile_result{
             profile_gemm<float>(m, n, k, lda, ldb, ldc, gemm_kernel_launch_function.second,

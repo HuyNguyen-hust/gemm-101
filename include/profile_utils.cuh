@@ -276,7 +276,7 @@ std::pair<float, float> profile_gemm(size_t m, size_t n, size_t k,
     print_performance_results(m, n, k, cublas_latency);
     std::cout << "custom gemm kernel performance: " << std::endl;
     print_performance_results(m, n, k, gemm_kernel_latency);
-    std::cout << "cuBLAS gemm kernel vs. custom gemm kernel" << std::endl;
+    std::cout << "custom gemm kernel vs. cuBLAS gemm kernel" << std::endl;
     std::cout << (cublas_latency / gemm_kernel_latency * 100.0f) << "%" << std::endl;
 
     return std::pair<float, float>{cublas_latency, gemm_kernel_latency};
