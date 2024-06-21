@@ -38,8 +38,8 @@ void launch_gemm_kernel_v01(size_t m, size_t n, size_t k,
 {   
     dim3 const block{32U, 32U, 1U};
     dim3 const grid{
-        (static_cast<unsigned int>(m) + block.x - 1U) / block.x,
-        (static_cast<unsigned int>(n) + block.y - 1U) / block.y, 1U
+        (static_cast<unsigned int>(n) + block.x - 1U) / block.x,
+        (static_cast<unsigned int>(m) + block.y - 1U) / block.y, 1U
     };
 
     gemm_v01<T><<<grid, block, 0, stream>>>(m, n, k, *alpha, A, lda, B, ldb, *beta, C, ldc);

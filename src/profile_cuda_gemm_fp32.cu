@@ -45,7 +45,8 @@ int main() {
                                 cudaStream_t)>>> const gemm_kernel_launch_functions {
                                     {"Custom gemm kernel V00", launch_gemm_kernel_v00<float>},
                                     {"Custom gemm kernel V01", launch_gemm_kernel_v01<float>},
-                                    {"Custom gemm kernel V02", launch_gemm_kernel_v02<float>}
+                                    {"Custom gemm kernel V02", launch_gemm_kernel_v02<float>},
+                                    {"custom gemm kernel V03", launch_gemm_kernel_v03<float>}
                                 };
 
     for (auto gemm_kernel_launch_function : gemm_kernel_launch_functions) {

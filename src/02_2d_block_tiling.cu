@@ -18,45 +18,50 @@ __global__ void gemm_v02(size_t m, size_t n, size_t k,
                             const T beta,
                             T *C, size_t ldc)
 {   
+    constexpr size_t NUM_THREADS{BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_N};
+
+    const size_t thread_linear_idx{threadIdx.y * blockDim.x + threadIdx.x};
+    const size_t C_row_idx{blockIdx.y * blockDim.y + threadIdx.y};
+    const size_t C_col_idx{blockIdx.x * blockDim.x + threadIdx.x};
+
     // init shared memory
     // shared memory must be allocated outside the conditional statements
     __shared__ T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K];
     __shared__ T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N];
 
-    const size_t C_col_idx{blockIdx.x * blockDim.x + threadIdx.x};
-    const size_t C_row_idx{blockIdx.y * blockDim.y + threadIdx.y};
+    
+    size_t num_AB_thread_block_tiles{(k + BLOCK_TILE_SIZE_K - 1U) / BLOCK_TILE_SIZE_K};
+
+    T sum{static_cast<T>(0.0)};
+    for (size_t i{0U}; i < num_AB_thread_block_tiles; ++i)
+    {
+        // copy A and B to shared memory
+        size_t AB_thread_block_tile_idx{i};
+        load_data_to_shared_memory<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, NUM_THREADS>(
+            A, lda,
+            B, ldb,
+            A_thread_block_tile_shared,
+            B_thread_block_tile_shared,
+            AB_thread_block_tile_idx,
+            thread_linear_idx,
+            m, n, k
+        );
+
+        __syncthreads();
+
+        // compute
+        #pragma unroll        
+        for (size_t j{0U}; j < BLOCK_TILE_SIZE_K; ++j)
+        {
+            // accumulate C
+            sum += A_thread_block_tile_shared[threadIdx.y][j] * B_thread_block_tile_shared[j][threadIdx.x];
+        }
+
+        __syncthreads();
+    }
 
     if (C_col_idx < n && C_row_idx < m)
     {
-        size_t num_AB_thread_block_tiles{(k + BLOCK_TILE_SIZE_K - 1U) / BLOCK_TILE_SIZE_K};
-
-        T sum{static_cast<T>(0.0)};
-        for (size_t i{0U}; i < num_AB_thread_block_tiles; ++i)
-        {
-            // copy A and B to shared memory
-            size_t AB_thread_block_tile_idx{i};
-            load_data_to_shared_memory<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_K, BLOCK_TILE_SIZE_N>(
-                A, lda,
-                B, ldb,
-                A_thread_block_tile_shared,
-                B_thread_block_tile_shared,
-                C_row_idx, C_col_idx,
-                AB_thread_block_tile_idx,
-                m, n, k
-            );
-
-            __syncthreads();
-
-            // compute
-            #pragma unroll        
-            for (size_t j{0U}; j < BLOCK_TILE_SIZE_K; ++j)
-            {
-                sum += A_thread_block_tile_shared[threadIdx.y][j] * B_thread_block_tile_shared[j][threadIdx.x];
-            }
-
-            __syncthreads();
-        }
-        // accumulate C
         C[C_row_idx * ldc + C_col_idx] = alpha * sum + beta * C[C_row_idx * ldc + C_col_idx];
     }
 }
@@ -75,10 +80,10 @@ void launch_gemm_kernel_v02(size_t m, size_t n, size_t k,
     constexpr size_t BLOCK_TILE_SIZE_N{32U};
     constexpr size_t BLOCK_TILE_SIZE_K{32U};
 
-    dim3 block{32U, 32U, 1U};
+    dim3 block{BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_M, 1U};
     dim3 grid{
-        (static_cast<unsigned int>(m) + block.x - 1U) / block.x,
-        (static_cast<unsigned int>(n) + block.y - 1U) / block.y, 1U 
+        (static_cast<unsigned int>(n) + block.x - 1U) / block.x,
+        (static_cast<unsigned int>(m) + block.y - 1U) / block.y, 1U 
     };
 
     gemm_v02<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K>
