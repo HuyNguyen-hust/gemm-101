@@ -13,7 +13,7 @@ template <
     const size_t THREAD_TILE_SIZE_M,
     const size_t THREAD_TILE_SIZE_N
 >
-__global__ void gemm_v04(size_t m, size_t n, size_t k,
+__global__ void gemm_v05(size_t m, size_t n, size_t k,
                             const T alpha,
                             const T *A, size_t lda,
                             const T *B, size_t ldb,
@@ -25,22 +25,25 @@ __global__ void gemm_v04(size_t m, size_t n, size_t k,
 
     const size_t thread_linear_idx{threadIdx.y * blockDim.x + threadIdx.x};
 
-    __shared__ T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K];
+    __shared__ T A_thread_block_tile_shared_transposed[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M];
     __shared__ T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N];
 
-    const size_t num_AB_thread_block_tiles{(k + BLOCK_TILE_SIZE_K - 1U) / BLOCK_TILE_SIZE_K};
-    
+    size_t num_AB_thread_block_tiles{(k + BLOCK_TILE_SIZE_K - 1U) / BLOCK_TILE_SIZE_K};
+
+
     T sum[THREAD_TILE_SIZE_M][THREAD_TILE_SIZE_N] = {static_cast<T>(0.0)};
     T A_tmp[THREAD_TILE_SIZE_M] = {static_cast<T>(0.0)};
     T B_tmp[THREAD_TILE_SIZE_N] = {static_cast<T>(0.0)};
+    
     for (size_t i{0U}; i < num_AB_thread_block_tiles; ++i)
-    {   
-        // copy A, B to shared memory
+    {
         size_t AB_thread_block_tile_idx{i};
-        load_data_to_shared_memory<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, NUM_THREADS>(
+
+        // copy A, B to shared memory
+        load_data_to_shared_memory_transposed<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, NUM_THREADS>(
             A, lda,
             B, ldb,
-            A_thread_block_tile_shared,
+            A_thread_block_tile_shared_transposed,
             B_thread_block_tile_shared,
             AB_thread_block_tile_idx,
             thread_linear_idx,
@@ -52,21 +55,21 @@ __global__ void gemm_v04(size_t m, size_t n, size_t k,
         // compute
         #pragma unroll
         for (size_t j{0U}; j < BLOCK_TILE_SIZE_K; ++j)
-        {   
+        {
+            // load necessary A data
             size_t A_thread_block_tile_row_idx{(thread_linear_idx / NUM_THREADS_PER_BLOCK_N) * THREAD_TILE_SIZE_M};
             size_t A_thread_block_tile_col_idx{j};
 
-            // load necessary A data
             #pragma unroll
             for (size_t thread_tile_row_idx{0U}; thread_tile_row_idx < THREAD_TILE_SIZE_M; ++thread_tile_row_idx)
-            {   
-                A_tmp[thread_tile_row_idx] = A_thread_block_tile_shared[A_thread_block_tile_row_idx + thread_tile_row_idx][A_thread_block_tile_col_idx];
+            {
+                A_tmp[thread_tile_row_idx] = A_thread_block_tile_shared_transposed[A_thread_block_tile_col_idx][A_thread_block_tile_row_idx + thread_tile_row_idx];
             }
 
+            // load necessary B data
             size_t B_thread_block_tile_row_idx{j};
             size_t B_thread_block_tile_col_idx{(thread_linear_idx % NUM_THREADS_PER_BLOCK_N) * THREAD_TILE_SIZE_N};
-            
-            // load necessary B data
+
             #pragma unroll
             for (size_t thread_tile_col_idx{0U}; thread_tile_col_idx < THREAD_TILE_SIZE_N; ++thread_tile_col_idx)
             {
@@ -83,7 +86,7 @@ __global__ void gemm_v04(size_t m, size_t n, size_t k,
                 }
             }
         }
-
+        
         __syncthreads();
     }
 
@@ -94,10 +97,8 @@ __global__ void gemm_v04(size_t m, size_t n, size_t k,
         #pragma unroll
         for (size_t thread_tile_col_idx{0U}; thread_tile_col_idx < THREAD_TILE_SIZE_N; ++thread_tile_col_idx)
         {
-            size_t C_row_idx{blockIdx.y * BLOCK_TILE_SIZE_M + 
-                (thread_linear_idx / NUM_THREADS_PER_BLOCK_N) * THREAD_TILE_SIZE_M + thread_tile_row_idx};
-            size_t C_col_idx{blockIdx.x * BLOCK_TILE_SIZE_N + 
-                (thread_linear_idx % NUM_THREADS_PER_BLOCK_N) * THREAD_TILE_SIZE_N + thread_tile_col_idx};
+            size_t C_row_idx{(blockIdx.y * BLOCK_TILE_SIZE_M) + thread_linear_idx / NUM_THREADS_PER_BLOCK_N * THREAD_TILE_SIZE_M + thread_tile_row_idx};
+            size_t C_col_idx{(blockIdx.x * BLOCK_TILE_SIZE_N) + thread_linear_idx % NUM_THREADS_PER_BLOCK_N * THREAD_TILE_SIZE_N + thread_tile_col_idx};
             if (C_row_idx < m && C_col_idx < n)
             {
                 C[C_row_idx * ldc + C_col_idx] = alpha * sum[thread_tile_row_idx][thread_tile_col_idx] + beta * C[C_row_idx * ldc + C_col_idx];
@@ -106,9 +107,10 @@ __global__ void gemm_v04(size_t m, size_t n, size_t k,
     }
 }                            
 
+
 // launch
 template <typename T>
-void launch_gemm_kernel_v04(size_t m, size_t n, size_t k,
+void launch_gemm_kernel_v05(size_t m, size_t n, size_t k,
                             const T *alpha,
                             const T *A, size_t lda,
                             const T *B, size_t ldb,
@@ -125,7 +127,7 @@ void launch_gemm_kernel_v04(size_t m, size_t n, size_t k,
 
     constexpr size_t NUM_THREADS_PER_BLOCK{(BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_N) / (THREAD_TILE_SIZE_M * THREAD_TILE_SIZE_N)};
 
-    // check if threads can fit into a block (because each thread now is a small matrix)
+    // check if threads can fit into a block (because each thread now is a small column)
     static_assert(BLOCK_TILE_SIZE_M % THREAD_TILE_SIZE_M == 0U);
     static_assert(BLOCK_TILE_SIZE_N % THREAD_TILE_SIZE_N == 0U);
 
@@ -133,31 +135,23 @@ void launch_gemm_kernel_v04(size_t m, size_t n, size_t k,
     static_assert(BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_K % NUM_THREADS_PER_BLOCK == 0U);
     static_assert(BLOCK_TILE_SIZE_K * BLOCK_TILE_SIZE_N % NUM_THREADS_PER_BLOCK == 0U);
 
-    const dim3 block{
-        NUM_THREADS_PER_BLOCK,
-        1U,
-        1U
-    };
-    const dim3 grid{
+    dim3 block{NUM_THREADS_PER_BLOCK, 1U, 1U};
+    dim3 grid{
         (static_cast<unsigned int>(n) + static_cast<unsigned int>(BLOCK_TILE_SIZE_N) - 1U) / static_cast<unsigned int>(BLOCK_TILE_SIZE_N),
         (static_cast<unsigned int>(m) + static_cast<unsigned int>(BLOCK_TILE_SIZE_M) - 1U) / static_cast<unsigned int>(BLOCK_TILE_SIZE_M),
         1U
     };
 
-    gemm_v04<
-        T,
-        BLOCK_TILE_SIZE_M,
-        BLOCK_TILE_SIZE_N,
-        BLOCK_TILE_SIZE_K,
-        THREAD_TILE_SIZE_M,
-        THREAD_TILE_SIZE_N
-    ><<<grid, block, 0, stream>>>(m, n, k, *alpha, A, lda, B, ldb, *beta, C, ldc);
-
+    gemm_v05<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, THREAD_TILE_SIZE_M, THREAD_TILE_SIZE_N>
+                <<<grid, block, 0, stream>>>(m, n, k, *alpha, A, lda, B, ldb, *beta, C, ldc);
+    
     CHECK_LAST_CUDA_ERROR();
 }                            
 
+
 // explicit instantiation
-template void launch_gemm_kernel_v04<float>(size_t m, size_t n, size_t k,
+
+template void launch_gemm_kernel_v05<float>(size_t m, size_t n, size_t k,
                                    const float *alpha,
                                    const float *A, size_t lda,
                                    const float *B, size_t ldb,
@@ -165,18 +159,18 @@ template void launch_gemm_kernel_v04<float>(size_t m, size_t n, size_t k,
                                    float *C, size_t ldc,
                                    cudaStream_t stream);
 
-template void launch_gemm_kernel_v04<double>(size_t m, size_t n, size_t k,
+template void launch_gemm_kernel_v05<double>(size_t m, size_t n, size_t k,
                                     const double *alpha,
                                     const double *A, size_t lda,
                                     const double *B, size_t ldb,
                                     const double *beta,
                                     double *C, size_t ldc,
-                                    cudaStream_t stream);
-                                    
-template void launch_gemm_kernel_v04<__half>(size_t m, size_t n, size_t k,
-                                    const __half *alpha,
-                                    const __half *A, size_t lda,
-                                    const __half *B, size_t ldb,
-                                    const __half *beta,
-                                    __half *C, size_t ldc,
-                                    cudaStream_t stream);                                    
+                                    cudaStream_t stream);                                   
+
+template void launch_gemm_kernel_v05<__half>(size_t m, size_t n, size_t k,
+                                   const __half *alpha,
+                                   const __half *A, size_t lda,
+                                   const __half *B, size_t ldb,
+                                   const __half *beta,
+                                   __half *C, size_t ldc,
+                                   cudaStream_t stream);                                   

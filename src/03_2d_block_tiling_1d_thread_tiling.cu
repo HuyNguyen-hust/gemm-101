@@ -65,6 +65,7 @@ __global__ void gemm_v03(size_t m, size_t n, size_t k,
         __syncthreads();
     }
     
+    // write C to global memory
     #pragma unroll
     for (size_t thread_tile_row_idx{0U}; thread_tile_row_idx < THREAD_TILE_SIZE_M; ++thread_tile_row_idx)
     {   

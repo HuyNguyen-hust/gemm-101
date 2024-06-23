@@ -48,6 +48,7 @@ int main() {
                                     {"Custom gemm kernel V02", launch_gemm_kernel_v02<float>},
                                     {"custom gemm kernel V03", launch_gemm_kernel_v03<float>},
                                     {"custom gemm kernel V04", launch_gemm_kernel_v04<float>},
+                                    {"custom gemm kernel V05", launch_gemm_kernel_v05<float>}
                                 };
 
     for (auto gemm_kernel_launch_function : gemm_kernel_launch_functions) {
