@@ -36,8 +36,8 @@ void launch_gemm_kernel_v00(size_t m, size_t n, size_t k,
                             T *C, size_t ldc,
                             cudaStream_t stream)
 {
-    dim3 const block{32U, 32U, 1U};
-    dim3 const grid{
+    const dim3 block{32U, 32U, 1U};
+    const dim3 grid{
         (static_cast<unsigned int>(m) + block.x - 1U) / block.x,
         (static_cast<unsigned int>(n) + block.y - 1U) / block.y, 1U
     };

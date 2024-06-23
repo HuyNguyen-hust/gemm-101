@@ -24,6 +24,7 @@ add_library(cuda_gemm
             01_coalesced_global_memory_access.cu
             02_2d_block_tiling.cu
             03_2d_block_tiling_1d_thread_tiling.cu
+            04_2d_block_tiling_2d_thread_tiling.cu
             profile_utils.cu
             utils.cu)
 # include directories for cuda_gemm

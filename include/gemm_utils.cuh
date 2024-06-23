@@ -14,8 +14,9 @@ __device__ void load_data_to_shared_memory(const T* A, size_t lda,
                                         size_t AB_thread_block_tile_idx,
                                         size_t thread_linear_idx,
                                         size_t m, size_t n, size_t k
-                                        ) 
+                                        )
 {   
+    // thread_linear_idx is the linear index of thread RELATIVE to the thread block
     constexpr size_t A_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_K};
 
     #pragma unroll

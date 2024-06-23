@@ -5,11 +5,13 @@
 #include "gemm_utils.cuh"
 
 // kernel
-template <typename T,
-        const size_t BLOCK_TILE_SIZE_M,
-        const size_t BLOCK_TILE_SIZE_N,
-        const size_t BLOCK_TILE_SIZE_K,
-        const size_t THREAD_TILE_SIZE_M>
+template <
+    typename T,
+    const size_t BLOCK_TILE_SIZE_M,
+    const size_t BLOCK_TILE_SIZE_N,
+    const size_t BLOCK_TILE_SIZE_K,
+    const size_t THREAD_TILE_SIZE_M
+>
 __global__ void gemm_v03(size_t m, size_t n, size_t k,
                             const T alpha,
                             const T *A, size_t lda,
@@ -47,6 +49,7 @@ __global__ void gemm_v03(size_t m, size_t n, size_t k,
         #pragma unroll
         for (size_t j{0U}; j < BLOCK_TILE_SIZE_K; ++j)
         {   
+            // load necessary B data
             size_t B_thread_block_tile_col_idx{thread_linear_idx % BLOCK_TILE_SIZE_N};
             T B_tmp{B_thread_block_tile_shared[j][B_thread_block_tile_col_idx]};
             
@@ -57,6 +60,8 @@ __global__ void gemm_v03(size_t m, size_t n, size_t k,
                 sum[thread_tile_row_idx] += A_thread_block_tile_shared[A_thread_block_tile_row_idx][j] * B_tmp;
             }
         }
+
+        // synchronize here because each thread handles the different thread tile
         __syncthreads();
     }
     
@@ -83,21 +88,22 @@ void launch_gemm_kernel_v03(size_t m, size_t n, size_t k,
                             T *C, size_t ldc,
                             cudaStream_t stream)
 {   
-    constexpr size_t BLOCK_TILE_SIZE_M{32U};
-    constexpr size_t BLOCK_TILE_SIZE_N{32U};
+    constexpr size_t BLOCK_TILE_SIZE_M{64U};
+    constexpr size_t BLOCK_TILE_SIZE_N{64U};
     constexpr size_t BLOCK_TILE_SIZE_K{8U};
     
     constexpr size_t THREAD_TILE_SIZE_M{8U};
     constexpr size_t NUM_THREADS_PER_BLOCK{(BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_N) / THREAD_TILE_SIZE_M};
 
-    // check if number of threads is a multiple of BLOCK_TILE_SIZE_M
-    // check if number of threads is a multiple of BLOCK_TILE_SIZE_K and BLOCK_TILE_SIZE_N
+    // check if threads can fit into a block (because each thread now is a small column)
     static_assert(BLOCK_TILE_SIZE_M % THREAD_TILE_SIZE_M == 0U);
-    static_assert(NUM_THREADS_PER_BLOCK % BLOCK_TILE_SIZE_K == 0U);
-    static_assert(NUM_THREADS_PER_BLOCK % BLOCK_TILE_SIZE_N == 0U);
 
-    dim3 const block{NUM_THREADS_PER_BLOCK, 1U, 1U};
-    dim3 const grid{
+    // check if each thread within a block can be assigned the same workload
+    static_assert(BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_K % NUM_THREADS_PER_BLOCK == 0U);
+    static_assert(BLOCK_TILE_SIZE_K * BLOCK_TILE_SIZE_N % NUM_THREADS_PER_BLOCK == 0U);
+
+    const dim3 block{NUM_THREADS_PER_BLOCK, 1U, 1U};
+    const dim3 grid{
         (static_cast<unsigned int>(n) + static_cast<unsigned int>(BLOCK_TILE_SIZE_N) - 1U) / static_cast<unsigned int>(BLOCK_TILE_SIZE_N),
         (static_cast<unsigned int>(m) + static_cast<unsigned int>(BLOCK_TILE_SIZE_M) - 1U) / static_cast<unsigned int>(BLOCK_TILE_SIZE_M),
         1U

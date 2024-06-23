@@ -10,7 +10,7 @@ template <
     const size_t BLOCK_TILE_SIZE_M,
     const size_t BLOCK_TILE_SIZE_N,
     const size_t BLOCK_TILE_SIZE_K
-    >
+>
 __global__ void gemm_v02(size_t m, size_t n, size_t k,
                             const T alpha,
                             const T *A, size_t lda,
@@ -80,8 +80,14 @@ void launch_gemm_kernel_v02(size_t m, size_t n, size_t k,
     constexpr size_t BLOCK_TILE_SIZE_N{32U};
     constexpr size_t BLOCK_TILE_SIZE_K{32U};
 
-    dim3 block{BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_M, 1U};
-    dim3 grid{
+    constexpr size_t NUM_THREADS_PER_BLOCK{BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_N};
+
+    // check if each thread within a block can be assigned the same workload
+    static_assert(BLOCK_TILE_SIZE_M * BLOCK_TILE_SIZE_K % NUM_THREADS_PER_BLOCK == 0U);
+    static_assert(BLOCK_TILE_SIZE_K * BLOCK_TILE_SIZE_N % NUM_THREADS_PER_BLOCK == 0U);
+
+    const dim3 block{BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_M, 1U};
+    const dim3 grid{
         (static_cast<unsigned int>(n) + block.x - 1U) / block.x,
         (static_cast<unsigned int>(m) + block.y - 1U) / block.y, 1U 
     };
