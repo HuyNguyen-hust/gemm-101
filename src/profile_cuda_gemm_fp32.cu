@@ -4,8 +4,8 @@
 #include "profile_utils.cuh"
 #include "cuda_gemm.hpp"
 
-int main() {
-
+int main() 
+{
     // print device information
     print_device_info();
 
@@ -46,9 +46,13 @@ int main() {
                                     {"Custom gemm kernel V00", launch_gemm_kernel_v00<float>},
                                     {"Custom gemm kernel V01", launch_gemm_kernel_v01<float>},
                                     {"Custom gemm kernel V02", launch_gemm_kernel_v02<float>},
+                                    {"Custom gemm kernel V02 vectorized", launch_gemm_kernel_v02_vectorized<float>},
                                     {"custom gemm kernel V03", launch_gemm_kernel_v03<float>},
+                                    {"custom gemm kernel V03 vectorized", launch_gemm_kernel_v03_vectorized<float>},
                                     {"custom gemm kernel V04", launch_gemm_kernel_v04<float>},
-                                    {"custom gemm kernel V05", launch_gemm_kernel_v05<float>}
+                                    {"custom gemm kernel V04 vectorized", launch_gemm_kernel_v04_vectorized<float>},
+                                    {"custom gemm kernel V05", launch_gemm_kernel_v05<float>},
+                                    {"custom gemm kernel V05 vectorized", launch_gemm_kernel_v05_vectorized<float>},
                                 };
 
     for (auto gemm_kernel_launch_function : gemm_kernel_launch_functions) {

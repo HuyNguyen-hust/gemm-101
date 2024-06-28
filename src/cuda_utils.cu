@@ -9,7 +9,7 @@ void check_cuda_error(cudaError_t err, const char *const func, const char *const
     if (err != cudaSuccess)
     {
         std::cerr << "Cuda runtime error at:" << file << ":" << line << std::endl;
-        std::cerr << "Error Message:" << cudaGetErrorString(err) << std::endl;
+        std::cerr << "Error Message:" << cudaGetErrorString(err) << " " << func << std::endl;
         std::exit(EXIT_FAILURE);
     }
 }
@@ -24,5 +24,3 @@ void check_last_cuda_error(const char *const file, int const line)
         std::exit(EXIT_FAILURE);
     }
 }
-
-// gemm_utils

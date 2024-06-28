@@ -13,9 +13,7 @@ find_package(CUDAToolkit REQUIRED)
 
 # find include dir of this project
 find_path(CUDA_GEMM_INCLUDE_DIR cuda_gemm.hpp HINTS ${CMAKE_SOURCE_DIR}/include)
-# CUDA_GEMM_INCLUDE_DIR == include/
-
-# setup cuda architectures
+# CUDA_GEMM_INCLUDE_DIR == /include
 
 # add libraries
 add_library(cuda_gemm
@@ -23,11 +21,15 @@ add_library(cuda_gemm
             00_non_coalesced_global_memory_access.cu
             01_coalesced_global_memory_access.cu
             02_2d_block_tiling.cu
+            02_2d_block_tiling_vma.cu
             03_2d_block_tiling_1d_thread_tiling.cu
+            03_2d_block_tiling_1d_thread_tiling_vma.cu
             04_2d_block_tiling_2d_thread_tiling.cu
+            04_2d_block_tiling_2d_thread_tiling_vma.cu
             05_2d_block_tiling_2d_thread_tiling_transposed.cu
+            05_2d_block_tiling_2d_thread_tiling_transposed_vma.cu
             profile_utils.cu
-            utils.cu)
+            cuda_utils.cu)
 # include directories for cuda_gemm
 target_include_directories(cuda_gemm PUBLIC ${CUDA_GEMM_INCLUDE_DIR})
 # set gpu properties
