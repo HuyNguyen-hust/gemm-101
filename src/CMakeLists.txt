@@ -28,6 +28,8 @@ add_library(cuda_gemm
             04_2d_block_tiling_2d_thread_tiling_vma.cu
             05_2d_block_tiling_2d_thread_tiling_transposed.cu
             05_2d_block_tiling_2d_thread_tiling_transposed_vma.cu
+            06_2d_block_tiling_2d_warp_tiling_2d_thread_tiling_transposed.cu
+            06_2d_block_tiling_2d_warp_tiling_2d_thread_tiling_transposed_vma.cu
             profile_utils.cu
             cuda_utils.cu)
 # include directories for cuda_gemm

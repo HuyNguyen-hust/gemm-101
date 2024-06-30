@@ -55,6 +55,8 @@ int main()
                                     {"custom gemm kernel V04 vectorized", launch_gemm_kernel_v04_vectorized<__half>},
                                     {"custom gemm kernel V05", launch_gemm_kernel_v05<__half>},
                                     {"custom gemm kernel V05_vectorized", launch_gemm_kernel_v05_vectorized<__half>},
+                                    {"custom gemm kernel V06", launch_gemm_kernel_v06<__half>},
+                                    {"custom gemm kernel V06_vectorized", launch_gemm_kernel_v06_vectorized<__half>},
                                 };
 
     for (auto gemm_kernel_launch_function : gemm_kernel_launch_functions) {
