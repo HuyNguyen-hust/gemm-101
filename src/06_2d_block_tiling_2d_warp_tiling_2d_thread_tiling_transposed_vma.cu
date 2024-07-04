@@ -145,7 +145,6 @@ __global__ void gemm_v06_vectorized(size_t m, size_t n, size_t k,
         }
 
         __syncthreads();
-
     }
     
     // write C to global memory

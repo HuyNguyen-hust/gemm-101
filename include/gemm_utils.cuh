@@ -7,12 +7,14 @@ template <
     const size_t BLOCK_TILE_SIZE_M,
     const size_t BLOCK_TILE_SIZE_N,
     const size_t BLOCK_TILE_SIZE_K,
-    const size_t NUM_THREADS
+    const size_t NUM_THREADS,
+    const size_t BLOCK_TILE_SKEW_SIZE_N = 0U,
+    const size_t BLOCK_TILE_SKEW_SIZE_K = 0U
 >
 __device__ void load_data_to_shared_memory(const T* A, size_t lda,
                                         const T* B, size_t ldb,
-                                        T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K],
-                                        T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N],
+                                        T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K + BLOCK_TILE_SKEW_SIZE_K],
+                                        T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N],
                                         size_t AB_thread_block_tile_idx,
                                         size_t thread_linear_idx,
                                         size_t m, size_t n, size_t k
@@ -64,12 +66,14 @@ template <
     const size_t BLOCK_TILE_SIZE_M,
     const size_t BLOCK_TILE_SIZE_N,
     const size_t BLOCK_TILE_SIZE_K,
-    const size_t NUM_THREADS
+    const size_t NUM_THREADS,
+    const size_t BLOCK_TILE_SKEW_SIZE_M = 0U,
+    const size_t BLOCK_TILE_SKEW_SIZE_N = 0U
 >
 __device__ void load_data_to_shared_memory_transposed(const T* A, size_t lda,
                                                     const T* B, size_t ldb,
-                                                    T A_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M],
-                                                    T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N],
+                                                    T A_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M + BLOCK_TILE_SKEW_SIZE_M],
+                                                    T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N],
                                                     size_t AB_thread_block_tile_idx,
                                                     size_t thread_linear_idx,
                                                     size_t m, size_t n, size_t k
@@ -123,12 +127,14 @@ template <
     const size_t BLOCK_TILE_SIZE_N,
     const size_t BLOCK_TILE_SIZE_K,
     const size_t NUM_THREADS,
-    typename VECTOR_TYPE = int4
+    typename VECTOR_TYPE = int4,
+    const size_t BLOCK_TILE_SKEW_SIZE_K = 0U,
+    const size_t BLOCK_TILE_SKEW_SIZE_N = 0U
 >
 __device__ void load_data_to_shared_memory_vectorized(const T* A, size_t lda,
                                              const T* B, size_t ldb,
-                                             T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K],
-                                             T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N],
+                                             T A_thread_block_tile_shared[BLOCK_TILE_SIZE_M][BLOCK_TILE_SIZE_K + BLOCK_TILE_SKEW_SIZE_K],
+                                             T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N],
                                              size_t AB_thread_block_tile_idx,
                                              size_t thread_linear_idx,
                                              size_t m, size_t n, size_t k
@@ -136,6 +142,9 @@ __device__ void load_data_to_shared_memory_vectorized(const T* A, size_t lda,
 {   
     // thread_linear_idx is the linear index of thread RELATIVE to the thread block
     constexpr size_t NUM_VECTOR_UNITS{sizeof(VECTOR_TYPE) / sizeof(T)};
+
+    static_assert((BLOCK_TILE_SIZE_K + BLOCK_TILE_SKEW_SIZE_K) * sizeof(T) % sizeof(VECTOR_TYPE) == 0U);
+    static_assert((BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N) * sizeof(T) % sizeof(VECTOR_TYPE) == 0U);
 
     // load A thread block tile
     constexpr size_t VECTORIZED_THREAD_BLOCK_TILE_SIZE_K{BLOCK_TILE_SIZE_K / NUM_VECTOR_UNITS};
@@ -214,12 +223,14 @@ template <
     const size_t BLOCK_TILE_SIZE_N,
     const size_t BLOCK_TILE_SIZE_K,
     const size_t NUM_THREADS,
-    typename VECTOR_TYPE = int4
+    typename VECTOR_TYPE = int4,
+    const size_t BLOCK_TILE_SKEW_SIZE_M = 0U,
+    const size_t BLOCK_TILE_SKEW_SIZE_N = 0U
 >
 __device__ void load_data_to_shared_memory_transposed_vectorized(const T* A, size_t lda,
                                              const T* B, size_t ldb,
-                                             T A_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M],
-                                             T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N],
+                                             T A_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M + BLOCK_TILE_SKEW_SIZE_M],
+                                             T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N],
                                              size_t AB_thread_block_tile_idx,
                                              size_t thread_linear_idx,
                                              size_t m, size_t n, size_t k
@@ -227,11 +238,14 @@ __device__ void load_data_to_shared_memory_transposed_vectorized(const T* A, siz
 {   
     // thread_linear_idx is the linear index of thread RELATIVE to the thread block
 
+    static_assert((BLOCK_TILE_SIZE_M + BLOCK_TILE_SKEW_SIZE_M) * sizeof(T) % sizeof(VECTOR_TYPE) == 0U);
+    static_assert((BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N) * sizeof(T) % sizeof(VECTOR_TYPE) == 0U);
+
     constexpr size_t NUM_VECTOR_UNITS{sizeof(VECTOR_TYPE) / sizeof(T)};
 
     // load A thread block tile
     constexpr size_t VECTORIZED_THREAD_BLOCK_TILE_SIZE_K{BLOCK_TILE_SIZE_K / NUM_VECTOR_UNITS};
-    constexpr size_t A_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_K  / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_M};
+    constexpr size_t A_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_K / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_M};
 
     #pragma unroll
     for (size_t load_idx{0U}; load_idx < ((A_VECTORIZED_THREAD_BLOCK_TILE_SIZE + NUM_THREADS - 1U) / NUM_THREADS); ++load_idx)

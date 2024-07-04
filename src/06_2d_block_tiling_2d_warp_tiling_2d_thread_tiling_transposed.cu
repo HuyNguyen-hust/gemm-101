@@ -132,7 +132,6 @@ __global__ void gemm_v06(size_t m, size_t n, size_t k,
         }
 
         __syncthreads();
-
     }
     
     // write C to global memory
@@ -223,7 +222,6 @@ void launch_gemm_kernel_v06(size_t m, size_t n, size_t k,
 }                            
 
 // explicit instantiation
-
 template void launch_gemm_kernel_v06<float>(size_t m, size_t n, size_t k,
                                               const float *alpha,
                                               const float *A, size_t lda,
