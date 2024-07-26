@@ -34,23 +34,24 @@ add_library(cuda_gemm
             07_2d_block_tiling_2d_warp_tiling_transposed_wmma.cu
             07_2d_block_tiling_2d_warp_tiling_transposed_wmma_vma.cu
             08_2d_block_tiling_2d_thread_tiling_cutlass_cute.cu
+            09_2d_block_tiling_2d_thread_tiling_cutlass_cute_tiledMMA_tiledCopy.cu
             profile_utils.cu
             cuda_utils.cu)
 # include directories for cuda_gemm
 target_include_directories(cuda_gemm PUBLIC ${CUDA_GEMM_INCLUDE_DIR} ${CUTLASS_CUTE_INCLUDE_DIR})
 # set gpu properties
-set_target_properties(cuda_gemm PROPERTIES CUDA_ARCHITECTURES 70)
+set_target_properties(cuda_gemm PROPERTIES CUDA_ARCHITECTURES 80)
 
 # add executables
 add_executable(profile_cuda_gemm_fp32 profile_cuda_gemm_fp32.cu)
 # link libraries
 target_link_libraries(profile_cuda_gemm_fp32 cuda_gemm CUDA::cublas)
 # set gpu properties
-set_target_properties(profile_cuda_gemm_fp32 PROPERTIES CUDA_ARCHITECTURES 70)
+set_target_properties(profile_cuda_gemm_fp32 PROPERTIES CUDA_ARCHITECTURES 80)
 
 # add executables
 add_executable(profile_cuda_gemm_fp16 profile_cuda_gemm_fp16.cu)
 # link libraries
 target_link_libraries(profile_cuda_gemm_fp16 cuda_gemm CUDA::cublas)
 # set gpu properties
-set_target_properties(profile_cuda_gemm_fp16 PROPERTIES CUDA_ARCHITECTURES 70)
+set_target_properties(profile_cuda_gemm_fp16 PROPERTIES CUDA_ARCHITECTURES 80)
