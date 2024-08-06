@@ -148,7 +148,7 @@ __device__ void load_data_to_shared_memory_vectorized(const T* A, size_t lda,
 
     // load A thread block tile
     constexpr size_t VECTORIZED_THREAD_BLOCK_TILE_SIZE_K{BLOCK_TILE_SIZE_K / NUM_VECTOR_UNITS};
-    constexpr size_t A_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_K  / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_M};
+    constexpr size_t A_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_K / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_M};
 
     #pragma unroll
     for (size_t load_idx{0U}; load_idx < ((A_VECTORIZED_THREAD_BLOCK_TILE_SIZE + NUM_THREADS - 1U) / NUM_THREADS); ++load_idx)
@@ -183,7 +183,7 @@ __device__ void load_data_to_shared_memory_vectorized(const T* A, size_t lda,
 
     // load B thread block tile
     constexpr size_t VECTORIZED_THREAD_BLOCK_TILE_SIZE_N{BLOCK_TILE_SIZE_N / NUM_VECTOR_UNITS};
-    constexpr size_t B_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_N  / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_K};
+    constexpr size_t B_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_N / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_K};
 
     #pragma unroll
     for (size_t load_idx{0U}; load_idx < ((B_VECTORIZED_THREAD_BLOCK_TILE_SIZE + NUM_THREADS - 1U) / NUM_THREADS); ++load_idx)
@@ -284,7 +284,7 @@ __device__ void load_data_to_shared_memory_transposed_vectorized(const T* A, siz
 
     // load B thread block tile
     constexpr size_t VECTORIZED_THREAD_BLOCK_TILE_SIZE_N{BLOCK_TILE_SIZE_N / NUM_VECTOR_UNITS};
-    constexpr size_t B_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_N  / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_K};
+    constexpr size_t B_VECTORIZED_THREAD_BLOCK_TILE_SIZE{BLOCK_TILE_SIZE_N / NUM_VECTOR_UNITS * BLOCK_TILE_SIZE_K};
 
     #pragma unroll
     for (size_t load_idx{0U}; load_idx < ((B_VECTORIZED_THREAD_BLOCK_TILE_SIZE + NUM_THREADS - 1U) / NUM_THREADS); ++load_idx)

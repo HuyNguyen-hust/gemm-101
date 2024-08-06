@@ -52,9 +52,9 @@ void gemm_v09(
 
     // global tile tensor
     auto cta_coord = make_coord(blockIdx.x, blockIdx.y, _);
-    // Tensor gA = local_tile(mA, select<0,2>(shape_mnk), select<0,2>(cta_coord)); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x k
-    Tensor gA = local_tile(mA, cta_tiler, cta_coord, Step<_1, X, _1>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x k
-    Tensor gB = local_tile(mB, cta_tiler, cta_coord, Step<X, _1, _1>{}); // BLOCK_TILE_SIZE_N x BLOCK_TILE_SIZE_K x k
+    // Tensor gA = local_tile(mA, select<0,2>(shape_mnk), select<0,2>(cta_coord)); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x num_tiles_k
+    Tensor gA = local_tile(mA, cta_tiler, cta_coord, Step<_1, X, _1>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x num_tiles_k
+    Tensor gB = local_tile(mB, cta_tiler, cta_coord, Step<X, _1, _1>{}); // BLOCK_TILE_SIZE_N x BLOCK_TILE_SIZE_K x num_tiles_k
     Tensor gC = local_tile(mC, cta_tiler, cta_coord, Step<_1, _1, X>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_N
 
     // shared memory
@@ -67,13 +67,13 @@ void gemm_v09(
 
     // use copy_a to partition gA, sA
     ThrCopy thr_copy_a = copy_a.get_slice(threadIdx.x); // get workload for 1 thread for 1 CPY Atom
-    Tensor tAgA = thr_copy_a.partition_S(gA);           // (CPY,CPY_M,CPY_K, k) 
+    Tensor tAgA = thr_copy_a.partition_S(gA);           // (CPY,CPY_M,CPY_K, num_tiles_k) 
     Tensor tAsA = thr_copy_a.partition_D(sA);           // (CPY,CPY_M,CPY_K)
     Tensor tArA = make_fragment_like(tAsA);
 
     // use copy_b to partiton gB, sB
     ThrCopy thr_copy_b = copy_b.get_slice(threadIdx.x); // get workload for 1 thread for 1 CPY Atom
-    Tensor tBgB = thr_copy_b.partition_S(gB);           // (CPY,CPY_N,CPY_K, k)
+    Tensor tBgB = thr_copy_b.partition_S(gB);           // (CPY,CPY_N,CPY_K, num_tiles_k)
     Tensor tBsB = thr_copy_b.partition_D(sB);           // (CPY,CPY_N,CPY_K)
     Tensor tBrB = make_fragment_like(tBsB);
 

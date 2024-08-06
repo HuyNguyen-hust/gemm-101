@@ -72,7 +72,7 @@ __global__ void gemm_v06_vectorized(size_t m, size_t n, size_t k,
     {
         size_t AB_thread_block_tile_idx{i};
 
-        load_data_to_shared_memory_transposed<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, NUM_THREADS>(
+        load_data_to_shared_memory_transposed_vectorized<T, BLOCK_TILE_SIZE_M, BLOCK_TILE_SIZE_N, BLOCK_TILE_SIZE_K, NUM_THREADS>(
             A, lda,
             B, ldb,
             A_thread_block_tile_shared_transposed,

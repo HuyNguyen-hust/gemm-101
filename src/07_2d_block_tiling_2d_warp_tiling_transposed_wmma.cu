@@ -35,13 +35,6 @@ __global__ void gemm_v07(size_t m, size_t n, size_t k,
 
     __shared__ T A_thread_block_tile_shared_transposed[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_M + BLOCK_TILE_SKEW_SIZE_M];
     __shared__ T B_thread_block_tile_shared[BLOCK_TILE_SIZE_K][BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N];
-
-    const size_t NUM_VECTOR_UNITS(sizeof(int4) / sizeof(T));
-    // check if an integer number of units can fit into a vector
-    static_assert(sizeof(int4) % sizeof(T) == 0U);
-    // check if an integer number of vector can fit into A_thread_block_tile_shared and B_thread_block_tile_shared
-    static_assert((BLOCK_TILE_SIZE_M + BLOCK_TILE_SKEW_SIZE_M) % NUM_VECTOR_UNITS == 0U);
-    static_assert((BLOCK_TILE_SIZE_N + BLOCK_TILE_SKEW_SIZE_N) % NUM_VECTOR_UNITS == 0U);
     
     const size_t num_AB_thread_block_tiles{(k + BLOCK_TILE_SIZE_K - 1U) / BLOCK_TILE_SIZE_K};
 

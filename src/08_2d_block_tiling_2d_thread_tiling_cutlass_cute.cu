@@ -66,9 +66,9 @@ void gemm_v08(
 
     // global tile tensor
     auto cta_coord = make_coord(blockIdx.y, blockIdx.x, _);
-    // Tensor gA = local_tile(mA, select<0,2>(shape_mnk), select<0,2>(cta_coord)); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x k
-    Tensor gA = local_tile(mA, cta_tiler, cta_coord, Step<_1, X, _1>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x k
-    Tensor gB = local_tile(mB, cta_tiler, cta_coord, Step<X, _1, _1>{}); // BLOCK_TILE_SIZE_N x BLOCK_TILE_SIZE_K x k
+    // Tensor gA = local_tile(mA, select<0,2>(shape_mnk), select<0,2>(cta_coord)); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x num_tiles_k
+    Tensor gA = local_tile(mA, cta_tiler, cta_coord, Step<_1, X, _1>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_K x num_tiles_k
+    Tensor gB = local_tile(mB, cta_tiler, cta_coord, Step<X, _1, _1>{}); // BLOCK_TILE_SIZE_N x BLOCK_TILE_SIZE_K x num_tiles_k
     Tensor gC = local_tile(mC, cta_tiler, cta_coord, Step<_1, _1, X>{}); // BLOCK_TILE_SIZE_M x BLOCK_TILE_SIZE_N
 
     // shared memory
@@ -84,9 +84,9 @@ void gemm_v08(
     // THREAD_TILE_SIZE_N = _32{}
     // THREAD_TILE_SIZE_K = _8{}
     Tensor tAsA = local_partition(sA, tA_layout, threadIdx.x); // (BLOCK_TILE_SIZE_M / THREAD_TILE_SIZE_M) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K)
-    Tensor tAgA = local_partition(gA, tA_layout, threadIdx.x); // (BLOCK_TILE_SIZE_M / THREAD_TILE_SIZE_M) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K) x k
+    Tensor tAgA = local_partition(gA, tA_layout, threadIdx.x); // (BLOCK_TILE_SIZE_M / THREAD_TILE_SIZE_M) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K) x num_tiles_k
     Tensor tBsB = local_partition(sB, tB_layout, threadIdx.x); // (BLOCK_TILE_SIZE_N / THREAD_TILE_SIZE_N) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K)
-    Tensor tBgB = local_partition(gB, tB_layout, threadIdx.x); // (BLOCK_TILE_SIZE_N / THREAD_TILE_SIZE_N) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K) x k
+    Tensor tBgB = local_partition(gB, tB_layout, threadIdx.x); // (BLOCK_TILE_SIZE_N / THREAD_TILE_SIZE_N) x (BLOCK_TILE_SIZE_K / THREAD_TILE_SIZE_K) x num_tiles_k
 
     CUTE_STATIC_ASSERT_V(size<0>(tAsA) == size<0>(tAgA));
     CUTE_STATIC_ASSERT_V(size<0>(tBsB) == size<0>(tBgB));
