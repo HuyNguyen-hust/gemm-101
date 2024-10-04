@@ -29,8 +29,8 @@ git submodule init
 git submodule update
 cmake -B build
 cmake --build build
-./build/csrc/profile_cuda_gemm_fp32
-./build/csrc/profile_cuda_gemm_fp16
+./build/src/profile_cuda_gemm_fp32
+./build/src/profile_cuda_gemm_fp16
 ```
 
 ## Credits
